@@ -3,4 +3,4 @@
 mkdir -p dist
 rm -rf dist/*
 
-node ./scripts/build.js ./flow . ./dist/flow.bundle.mjs
+node ./scripts/build.js ./flow ./index.mjs ./dist/flow.bundle.mjs
