@@ -13,5 +13,6 @@
   "author": "schurterb",
   "license": "MIT",
   "devDependencies": {
+    "esprima": "^4.0.1"
   }
 }

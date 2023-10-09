@@ -1,9 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-let imports = [];
-let content = [];
-let index_code = '';
+let imports = '';
+let content = '';
 let addedFiles = new Set(); // Set to track added files
 
 function walkFiles(startPath) {
@@ -43,30 +42,24 @@ function formatFile(filePath) {
       if (!line.includes('./') && 
           !line.includes('../') && 
           !imports.includes(line)) {
-        imports.push(line);
+        imports += line + '\n';
       }
-    } else if (filePath.endsWith('index.mjs')) {
-      index_code += line + '\n';
+    } else if (!line.startsWith('export') || filePath.endsWith('index.mjs')) {
+      localContent += line + '\n';
     } else if (line.startsWith('export') && !filePath.endsWith('index.mjs')) {
       line = line.replace("export default", '');
       line = line.replace("export", '');
       localContent += line + '\n';
-    } else {
-      localContent += line + '\n';
     }
   });
-  if (imports.includes(filePath)) {
-    content.unshift(localContent); // add to the start
-  } else {
-    content.push(localContent); // add to the end
-  }
+  content += localContent;
 }
 
 function main(startPaths, outputFileName) {
   for (let i = 0; i < startPaths.length; i++) {
     walkFiles(startPaths[i]);
   }
-  fs.writeFileSync(outputFileName, imports.join("\n") + '\n' + content.join("\n\n")+'\n'+index_code, 'utf8');
+  fs.writeFileSync(outputFileName, imports + '\n' + content, 'utf8');
 }
 
 const startPaths = process.argv.slice(2, -1); // input directories or files
