@@ -1,9 +1,11 @@
-
 const fs = require('fs');
 const path = require('path');
+
+let imports = [];
+let content = [];
 let index_code = '';
 let addedFiles = new Set(); // Set to track added files
-let fileData = new Map(); 
+
 function walkFiles(startPath) {
   const stat = fs.statSync(startPath);
   if (stat.isDirectory()) {
@@ -27,6 +29,8 @@ function walkFiles(startPath) {
     }
   }
 }
+
+const fileDependencies = new Map(); 
 function formatFile(filePath) {
   const data = fs.readFileSync(filePath, 'utf8');
   addedFiles.add(filePath); // add file to Set
@@ -39,11 +43,14 @@ function formatFile(filePath) {
   lines.forEach(line => {
     if (line.startsWith('import')) {
       // check if the import is a relative path or local import
-      if (line.includes('from')) {
-        let importedFilePath = line.split('from')[1].trim();
-        importedFilePath = importedFilePath.substring(1, importedFilePath.length - 1); // remove quotes
-        importFilePaths.push(importedFilePath);
-        localImports += line + "\n";
+      // check for and skip duplicates
+      if (!line.includes('./') && !line.includes('../') && !imports.includes(line)) {
+        localImports += line;
+        if(line.includes('from')) {
+          let importedFilePath = line.split('from')[1].trim();
+          importedFilePath = importedFilePath.substring(1, importedFilePath.length - 1); // remove quotes
+          importFilePaths.push(importedFilePath);
+        }
       }
     } else if (filePath.endsWith('index.mjs')) {
       index_code += line + '\n';
@@ -56,35 +63,44 @@ function formatFile(filePath) {
     }
   });
   
-  fileData.set(filePath, {
-    imports: localImports,
-    content: localContent,
-    dependencies: importFilePaths
-  });
+  fileDependencies.set(filePath, importFilePaths);
+  
+  if (!imports.includes(filePath)) {
+    content.push(localContent); // add to the end
+  } else {
+    content.unshift(localContent); // add to the beginnings
+  }
+  imports.push(localImports);
 }
+
 function orderContentByDependencies() {
-  let orderedFileData = [...fileData.entries()].sort((a, b) => {
-    if(a[1].dependencies.includes(b[0])) return 1;
-    if(b[1].dependencies.includes(a[0])) return -1;
-    return 0;
-  });
-  fileData = new Map(orderedFileData);
+    let orderedContent = [];
+    
+    for(let [filePath, dependencies] of fileDependencies) {
+        let contentIndex = content.findIndex(c => c.filePath === filePath);
+        let thisContent = content[contentIndex];
+        for(let dep of dependencies) {
+            let depIndex = content.findIndex(c => c.filePath === dep);
+            if(depIndex !== -1 && depIndex > contentIndex) {
+                let depContent = content[depIndex];
+                content.splice(depIndex, 1);  // remove the content that needs to relocated
+                content.splice(contentIndex, 0, depContent);  // insert the content in the new location
+                contentIndex++; // update the current content index
+            }
+        }
+        orderedContent.push(thisContent);
+    }
+    
+    return orderedContent;
 }
+
 function main(startPaths, outputFileName) {
   for (let i = 0; i < startPaths.length; i++) {
     walkFiles(startPaths[i]);
   }
+  let orderedContent = orderContentByDependencies();
   
-  orderContentByDependencies();
-  let bundledImports = "";
-  let bundledContent = "";
-  
-  for(let data of fileData.values()) {
-    bundledImports += data.imports;
-    bundledContent += data.content;
-  }
-  
-  fs.writeFileSync(outputFileName, bundledImports + '\n' + bundledContent + '\n'+index_code, 'utf8');
+  fs.writeFileSync(outputFileName, imports.join("\n") + '\n' + orderedContent.join("\n\n")+'\n'+index_code, 'utf8');
 }
 
 const startPaths = process.argv.slice(2, -1); // input directories or files
