@@ -52,6 +52,7 @@ function formatFile(filePath) {
   
   const lines = data.split('\n');
   let localImports = '';
+  let nonlocalImports = '';
   let localContent = '';
   
   let importFilePaths = [];
@@ -64,7 +65,11 @@ function formatFile(filePath) {
         importedFilePath = importedFilePath.substring(1, importedFilePath.length - 2);
         let split_importedFilePath = importedFilePath.split('/');
         importFilePaths.push(split_importedFilePath[split_importedFilePath.length - 1]);
-        localImports += line + "\n";
+        if(!line.includes('./') && !line.includes('../')) {
+          nonlocalImports += line + "\n";
+        } else {
+          localImports += line + "\n";
+        }
       } else {
         console.log("How to handle this line? :: "+line);
       }
@@ -85,7 +90,7 @@ function formatFile(filePath) {
   // store the imports, content and dependencies of this file
   fileData.set(extractFinalFileName(filePath), {
     name: filePath,
-    imports: localImports,
+    imports: nonlocalImports,
     content: localContent,
     dependencies: importFilePaths
   });
