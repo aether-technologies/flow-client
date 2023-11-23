@@ -11,15 +11,11 @@ import Flow from './flow/flow.mjs';
 
 export default class FlowNode extends BaseFlowNode {
   constructor() {
-    super('TestClient0');
+    super();
     
     this.initialize();
     this.flowRouter.addConnector(new LocalFlowConnector());
     this.flowRouter.addConnector(new WsFlowConnector('WSS-1', 'localhost', 8000));
-  }
-
-  test() {
-    TestClient.sendTestMessage();
   }
 }
 
