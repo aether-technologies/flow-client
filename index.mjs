@@ -9,7 +9,7 @@ import FlowConnector from './flow/flow-connector.mjs';
 import FlowMessage from './flow/flow-message.mjs';
 import Flow from './flow/flow.mjs';
 
-import tools from './flow/tools.mjs';
+import { tools } from './flow/tools.mjs';
 
 export default class FlowNode extends BaseFlowNode {
   constructor() {
