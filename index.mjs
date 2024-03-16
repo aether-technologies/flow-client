@@ -17,7 +17,8 @@ export default class FlowNode extends BaseFlowNode {
     
     this.initialize();
     this.flowRouter.addConnector(new LocalFlowConnector());
-    this.flowRouter.addConnector(new WsFlowConnector('WSS-1', 'localhost', 8000));
+    //TODO: Add logic to dynamically add connectors based on config
+    this.flowRouter.addConnector(new WsFlowConnector(config.wss_id || 'WSS-1', config.wss_addr || 'localhost', config.wss_port || 8000));
   }
 }
 
