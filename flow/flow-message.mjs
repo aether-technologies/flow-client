@@ -18,5 +18,3 @@ export default class FlowMessage {
         return response;
     }
 }
-
-// export default FlowMessage;
